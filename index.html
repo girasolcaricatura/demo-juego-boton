@@ -113,7 +113,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 #flash{position:absolute;inset:0;background:#fff;z-index:11;opacity:0;pointer-events:none}
 #flash.go{animation:flash .45s ease-out}
 @keyframes flash{0%{opacity:.75}100%{opacity:0}}
-#mute{position:absolute;right:2vmin;top:2vmin;z-index:12;font-size:1.8vmin;color:#555;letter-spacing:.2em;font-weight:700;display:none}
 </style>
 </head>
 <body class="s-intro">
@@ -159,7 +158,6 @@ canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 
   <div id="btn"></div>
   <div id="flash"></div>
-  <div id="mute">SONIDO OFF</div>
 </div>
 
 <script>
@@ -266,38 +264,9 @@ function burst(cr,y,n){const x0=cr.x-cr.w*.15,x1=cr.x+cr.w*1.15;
 function fountain(){for(const side of [0,1]){const x=side?W*.92:W*.08;for(let i=0;i<4;i++){
   spark(x,H,(side?-1:1)*(80+Math.random()*350)*K,-(700+Math.random()*700)*K,1+Math.random()*.8,(1.2+Math.random()*2)*K);}}}
 
-/* ---------- AUDIO ---------- */
-let AC=null,master,muted=true,hum=null,noiseBuf;
-function audioInit(){
-  if(AC){AC.resume();return;}
-  try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
-  master=AC.createGain();master.gain.value=muted?0:.55;master.connect(AC.destination);
-  noiseBuf=AC.createBuffer(1,AC.sampleRate*.6,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
-}
-function humStart(){if(!AC)return;humStop();const t=AC.currentTime;
-  const o1=AC.createOscillator(),o2=AC.createOscillator(),f=AC.createBiquadFilter(),g=AC.createGain();
-  o1.type='sawtooth';o2.type='square';o2.detune.value=-1200+7;f.type='lowpass';f.Q.value=6;f.frequency.value=600;g.gain.value=0;
-  o1.connect(f);o2.connect(f);f.connect(g).connect(master);o1.start();o2.start();g.gain.setTargetAtTime(.09,t,.05);
-  hum={o1,o2,f,g};}
-function humSet(p){if(!hum)return;const t=AC.currentTime,fr=80+p*480;
-  hum.o1.frequency.setTargetAtTime(fr,t,.015);hum.o2.frequency.setTargetAtTime(fr,t,.015);hum.f.frequency.setTargetAtTime(400+p*3200,t,.02);}
-function humStop(){if(!hum)return;const h=hum;hum=null;const t=AC.currentTime;h.g.gain.setTargetAtTime(0,t,.03);setTimeout(()=>{try{h.o1.stop();h.o2.stop();}catch(e){}},300);}
-function tone(f,dur,type='square',vol=.12,when=0,f2){if(!AC)return;const t=AC.currentTime+when,o=AC.createOscillator(),g=AC.createGain();
-  o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+dur);
-  g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);o.connect(g).connect(master);o.start(t);o.stop(t+dur+.05);}
-function zap(){if(!AC)return;const t=AC.currentTime,n=AC.createBufferSource(),bp=AC.createBiquadFilter(),g=AC.createGain();
-  n.buffer=noiseBuf;bp.type='bandpass';bp.Q.value=1.2;bp.frequency.setValueAtTime(5000,t);bp.frequency.exponentialRampToValueAtTime(300,t+.4);
-  g.gain.setValueAtTime(.5,t);g.gain.exponentialRampToValueAtTime(.001,t+.45);n.connect(bp).connect(g).connect(master);n.start(t);
-  tone(900,.35,'sawtooth',.15,0,60);tone(60,.4,'sine',.4,0,35);}
-const sfx={
-  click:()=>tone(1200,.06,'square',.08),
-  lvl:()=>{tone(300,.12,'square',.08);tone(450,.12,'square',.08,.1);tone(680,.2,'square',.08,.2);},
-  go:()=>tone(880,.25,'sawtooth',.1,0,1760),
-  perfect:()=>[1046,1318,1568,2093].forEach((f,i)=>tone(f,.25,'square',.07,i*.06)),
-  tick:()=>tone(1800+Math.random()*400,.03,'triangle',.05),
-  win:()=>[523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,.3,'square',.08,i*.11)),
-  lose:()=>{tone(440,.3,'sawtooth',.09);tone(330,.5,'sawtooth',.09,.28,220);}
-};
+/* ---------- SIN AUDIO ---------- */
+const audioInit=()=>{},humStart=()=>{},humSet=()=>{},humStop=()=>{},zap=()=>{};
+const sfx={click(){},lvl(){},go(){},perfect(){},tick(){},win(){},lose(){}};
 
 /* ---------- ESTADO ---------- */
 let state='intro',level=0,scores=[],p=0,phase=0,dir=1,playT=0,lockUntil=0,timers=[],drain=null,lineAlpha=0,lastTick=0;
@@ -370,7 +339,6 @@ addEventListener('contextmenu',e=>e.preventDefault());
 addEventListener('keydown',e=>{
   if(e.repeat)return;const k=e.key.toLowerCase();
   if(k==='f'){document.fullscreenElement?document.exitFullscreen():document.documentElement.requestFullscreen().catch(()=>{});return;}
-  if(k==='m'){muted=!muted;$('mute').style.display=muted?'block':'none';if(master)master.gain.value=muted?0:.55;return;}
   e.preventDefault();press();
 });
 
