@@ -267,7 +267,7 @@ function fountain(){for(const side of [0,1]){const x=side?W*.92:W*.08;for(let i=
   spark(x,H,(side?-1:1)*(80+Math.random()*350)*K,-(700+Math.random()*700)*K,1+Math.random()*.8,(1.2+Math.random()*2)*K);}}}
 
 /* ---------- AUDIO ---------- */
-let AC=null,master,muted=false,hum=null,noiseBuf;
+let AC=null,master,muted=true,hum=null,noiseBuf;
 function audioInit(){
   if(AC){AC.resume();return;}
   try{AC=new (window.AudioContext||window.webkitAudioContext)();}catch(e){return;}
